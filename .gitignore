@@ -55,3 +55,680 @@ docs/_build/
 
 # PyBuilder
 target/
+
+#The code starts here:
+
+#Made by Raymond Timmermans
+#All rights reserved
+
+import pygame, sys
+import random
+from pygame.locals import *
+from pygame import mixer
+
+# Number of frames per second
+# Change this value to speed up or slow down your game
+FPS = 200
+
+#Global Variables to be used through our program
+WINDOWWIDTH = 640
+WINDOWHEIGHT = 480
+LINETHICKNESS = 10
+PADDLESIZE = 80
+PADDLEOFFSET = 20
+
+# Set up the colours
+BLACK     = (0  ,0  ,0  )
+WHITE     = (255,255,255)
+BLUE      = (80 ,150,150)
+LIGHTBLUE = (100,180,180)
+
+#draws the first screen, the starting screen
+def showTextScreen():
+    #draws the text 'pong'
+    titleSurf = BIGFONT.render('Pong ++', True, LIGHTBLUE)
+    titleRect = titleSurf.get_rect()
+    titleRect.center = (int(WINDOWWIDTH / 2), int(WINDOWHEIGHT / 3 + 30))
+    DISPLAYSURF.blit(titleSurf, titleRect)
+
+    #draws the text 'Click to continue.'
+    clickToContinueSurf = BASICFONT.render('Click to continue', True, BLUE)
+    clickToContinueRect = clickToContinueSurf.get_rect()
+    clickToContinueRect.center = (int(WINDOWWIDTH / 2), int(WINDOWHEIGHT / 2 + 30))
+    DISPLAYSURF.blit(clickToContinueSurf, clickToContinueRect)
+
+    #waits until the user clicks to continue
+    while True:
+        checkForQuit()
+        for event in pygame.event.get():
+            if event.type == MOUSEBUTTONUP:
+                showChooseGameMode() # <<<< if mouse is pressed, this will happen
+        DISPLAYSURF.blit(titleSurf, titleRect)
+        DISPLAYSURF.blit(clickToContinueSurf, clickToContinueRect)
+        pygame.display.update()
+
+#draws the second screen, the choose game mode screen.
+def showChooseGameMode():
+
+    #stops any music and starts playing the intro song
+    pygame.mixer.music.stop()
+    MainSong = pygame.mixer.music.load('IntroSong.mp3')
+    pygame.mixer.music.play(-1, 0.0) # syntax for playing it again when song stops
+
+    #sets mouse visible
+    pygame.mouse.set_visible(True)
+
+    #makes a new blank screen
+    #this is not the correct way to do it, but I wanted the previous text to dissapear.
+    #there's probably a way to make the previous text dissapear correctly, but I
+    #just drawed a black area over the previous text.
+    pygame.draw.rect(DISPLAYSURF, BLACK, (0, 0, WINDOWWIDTH, WINDOWHEIGHT))
+    
+    #draws more text etc
+    whichModeSurf = BASICFONT.render('Which game mode do you want to play?', True, BLUE)
+    whichModeRect = whichModeSurf.get_rect()
+    whichModeRect.center = (int(WINDOWWIDTH / 2), int(WINDOWHEIGHT * 0.15))
+    DISPLAYSURF.blit(whichModeSurf, whichModeRect)
+
+    noMistakesSurf = BIGFONT.render('No mistakes', True, LIGHTBLUE)
+    noMistakesRect = noMistakesSurf.get_rect()
+    noMistakesRect.center = (int(WINDOWWIDTH / 2), int(WINDOWHEIGHT * 0.35))
+    DISPLAYSURF.blit(noMistakesSurf, noMistakesRect)
+
+    noMistakesTextSurf = BASICFONT.render('(You are your own worst enemy)', True, BLUE)
+    noMistakesTextRect = noMistakesTextSurf.get_rect()
+    noMistakesTextRect.center = (int(WINDOWWIDTH / 2), int(WINDOWHEIGHT * 0.45))
+    DISPLAYSURF.blit(noMistakesTextSurf, noMistakesTextRect)
+
+    beatTheComputerSurf = BIGFONT.render('Beat the computer', True, LIGHTBLUE)
+    beatTheComputerRect = beatTheComputerSurf.get_rect()
+    beatTheComputerRect.center = (int(WINDOWWIDTH / 2), int(WINDOWHEIGHT * 0.65))
+    DISPLAYSURF.blit(beatTheComputerSurf, beatTheComputerRect)
+
+    beatTheComputerTextSurf = BASICFONT.render('(He doesnt make any mistakes)', True, BLUE)
+    beatTheComputerTextRect = beatTheComputerTextSurf.get_rect()
+    beatTheComputerTextRect.center = (int(WINDOWWIDTH / 2), int(WINDOWHEIGHT * 0.75))
+    DISPLAYSURF.blit(beatTheComputerTextSurf, beatTheComputerTextRect)
+
+    exitSurf = BASICFONT.render('Exit', True, BLUE)
+    exitRect = exitSurf.get_rect()
+    exitRect.bottomright = (WINDOWWIDTH - LINETHICKNESS, WINDOWHEIGHT - LINETHICKNESS)
+    DISPLAYSURF.blit(exitSurf, exitRect)
+    
+    while True:
+        #waits until the user click on an option
+        checkForQuit()
+        for event in pygame.event.get(): # event handling loop
+            if event.type == MOUSEBUTTONUP:
+                mousex, mousey = event.pos
+                if noMistakesRect.collidepoint( (mousex, mousey) ) or noMistakesTextRect.collidepoint( (mousex, mousey) ):
+                    infoNoMistakes()
+                elif beatTheComputerRect.collidepoint( (mousex, mousey) ) or beatTheComputerTextRect.collidepoint( (mousex, mousey) ):
+                    infoBeatTheComputer()
+                elif exitRect.collidepoint( (mousex, mousey) ):
+                    terminate()
+        DISPLAYSURF.blit(whichModeSurf, whichModeRect)
+        DISPLAYSURF.blit(noMistakesSurf, noMistakesRect)
+        DISPLAYSURF.blit(noMistakesTextSurf, noMistakesTextRect)
+        DISPLAYSURF.blit(beatTheComputerSurf, beatTheComputerRect)
+        DISPLAYSURF.blit(beatTheComputerTextSurf, beatTheComputerTextRect)
+        DISPLAYSURF.blit(exitSurf, exitRect)
+        pygame.display.update()
+
+#gives some information befor the game starts (no mistakes)
+def infoNoMistakes():
+
+    #makes a new blank screen
+    #again, not the correct way to do it, but whatever
+    pygame.draw.rect(DISPLAYSURF, BLACK, (0, 0, WINDOWWIDTH, WINDOWHEIGHT))
+
+    infoSurf = BASICFONT.render('You can always go back to the menu by pressing the "b" button', True, BLUE)
+    infoRect = infoSurf.get_rect()
+    infoRect.center = (WINDOWWIDTH / 2, WINDOWHEIGHT / 2)
+    DISPLAYSURF.blit(infoSurf, infoRect)
+
+    while True:
+        #waits until the user clicks.
+        checkForQuit()
+        for event in pygame.event.get():
+            if event.type == MOUSEBUTTONUP:
+                noMistakes() # <<<< if mouse is pressed, this will happen
+        DISPLAYSURF.blit(infoSurf, infoRect)
+        pygame.display.update()
+
+#gives some information befor the game starts (beat the computer)
+def infoBeatTheComputer():
+
+    #makes a new blank screen
+    #again, not the correct way to do it, but whatever
+    pygame.draw.rect(DISPLAYSURF, BLACK, (0, 0, WINDOWWIDTH, WINDOWHEIGHT))
+
+    infoSurf = BASICFONT.render('You can always go back to the menu by pressing the "b" button', True, BLUE)
+    infoRect = infoSurf.get_rect()
+    infoRect.center = (WINDOWWIDTH / 2, WINDOWHEIGHT / 2)
+    DISPLAYSURF.blit(infoSurf, infoRect)
+
+    while True:
+        #waits until the user clicks.
+        checkForQuit()
+        for event in pygame.event.get():
+            if event.type == MOUSEBUTTONUP:
+                beatTheComputer() # <<<< if mouse is pressed, this will happen
+        DISPLAYSURF.blit(infoSurf, infoRect)
+        pygame.display.update()
+
+#one of the two game modes
+#this function can be seen as the main function of the game mode 'no mistakes'
+def noMistakes():
+
+    #get sounds
+    s = pygame.mixer.Sound('BallTouchesPaddle.wav')
+    s2 = pygame.mixer.Sound('BallTouchesWall.wav')
+
+    #stops previous music, plays main song
+    pygame.mixer.music.stop()
+    MainSong = pygame.mixer.music.load('MainSong.mp3')
+    pygame.mixer.music.play(-1, 0.0)
+
+    #Initiate variable and set starting positions
+    #any future changes made within rectangles
+    ballX = WINDOWWIDTH/2 - LINETHICKNESS/2
+    ballY = random.randint(LINETHICKNESS * 2, WINDOWHEIGHT - LINETHICKNESS * 2)
+    playerOnePosition = (WINDOWHEIGHT - PADDLESIZE) /2
+    playerTwoPosition = (WINDOWHEIGHT - PADDLESIZE) /2
+    score = 0
+    bestScore = 0
+    
+    #Keeps track of ball direction
+    ballDirX = -1 ## -1 = left 1 = right
+    ballDirY = -1 ## -1 = up 1 = down
+
+    #Keeps track of paddle4 and paddle5 directions
+    paddle4DirY = -1
+    paddle5DirY = 1
+
+    #Creates Rectangles for ball and paddles.
+    paddle1 = pygame.Rect(PADDLEOFFSET,playerOnePosition, LINETHICKNESS,PADDLESIZE)
+    paddle2 = pygame.Rect(WINDOWWIDTH - PADDLEOFFSET - LINETHICKNESS, playerTwoPosition, LINETHICKNESS,PADDLESIZE)
+    paddle3 = pygame.Rect(WINDOWWIDTH / 2 - LINETHICKNESS / 2, WINDOWHEIGHT / 2 - PADDLESIZE, LINETHICKNESS,PADDLESIZE * 2)
+    paddle4 = pygame.Rect(WINDOWWIDTH * 0.67 - LINETHICKNESS / 2,WINDOWHEIGHT / 2 - PADDLESIZE / 2,LINETHICKNESS,PADDLESIZE)
+    paddle5 = pygame.Rect(WINDOWWIDTH * 0.33 - LINETHICKNESS / 2,WINDOWHEIGHT / 2 - PADDLESIZE / 2,LINETHICKNESS,PADDLESIZE)
+    ball = pygame.Rect(ballX, ballY, LINETHICKNESS, LINETHICKNESS)
+
+    #Draws the starting position of the Arena
+    drawArena()
+    drawPaddle(paddle1)
+    drawPaddle(paddle2)
+    drawPaddle(paddle3)
+    drawPaddle(paddle4)
+    drawPaddle(paddle5)
+    drawBall(ball)
+
+    pygame.mouse.set_visible(0) # make cursor invisible
+
+    while True: #main game loop
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                terminate()
+            # mouse movement commands
+            elif event.type == MOUSEMOTION:
+                mousex, mousey = event.pos
+                paddle1.y = mousey
+                if mousex < WINDOWWIDTH/4:
+                    paddle1.x = mousex
+            elif event.type == KEYDOWN:
+                if event.key == K_b:
+                    showChooseGameMode()
+
+        drawArena()
+        drawPaddle(paddle1)
+        drawPaddle(paddle2)
+        drawPaddle(paddle3)
+        drawPaddle(paddle4)
+        drawPaddle(paddle5)
+        drawBall(ball)
+
+        stopMovingLR(paddle1)
+
+        movePaddle4(paddle4, paddle4DirY)
+        paddle4DirY = checkPaddle4Collision(paddle4, paddle4DirY)
+        movePaddle5(paddle5, paddle5DirY)
+        paddle5DirY = checkPaddle5Collision(paddle5, paddle5DirY)
+
+        ball = moveBall(ball, ballDirX, ballDirY)
+        ballDirX, ballDirY = checkEdgeCollision(ball, ballDirX, ballDirY, s2)
+        score = checkScore(paddle1, paddle2, ball, score, ballDirX)
+        bestScore = checkBestScore(paddle2, ball, score, bestScore)
+        ballDirX = ballDirX * checkHitBall(ball, paddle1, paddle2, paddle3, paddle4, paddle5, ballDirX, score, s)
+        paddle2 = artificialIntelligence (ball, ballDirX, paddle2)
+
+        displayScore(score)
+        displayBestScore(bestScore)
+        
+        pygame.display.update()
+
+#one of the two game modes
+#this function can be seen as the main function of the game mode 'beat the computer'
+def beatTheComputer():
+
+    pygame.mixer.music.stop()
+    MainSong = pygame.mixer.music.load('MainSong.mp3')
+    pygame.mixer.music.play(-1, 0.0)
+
+    s = pygame.mixer.Sound('BallTouchesPaddle.wav')
+    s2 = pygame.mixer.Sound('BallTouchesWall.wav')
+    
+    #Initiate variable and set starting positions
+    #any future changes made within rectangles
+    ballX = WINDOWWIDTH/2 - LINETHICKNESS/2
+    ballY = random.randint(LINETHICKNESS * 2, WINDOWHEIGHT - LINETHICKNESS * 2)
+    playerOnePosition = (WINDOWHEIGHT - PADDLESIZE) /2
+    playerTwoPosition = (WINDOWHEIGHT - PADDLESIZE) /2
+    score = 0
+    compScore = 0
+    pointsLeft = 35
+    
+    #Keeps track of ball direction
+    ballDirX = -1 ## -1 = left 1 = right
+    ballDirY = -1 ## -1 = up 1 = down
+
+    #Keeps track of paddle4 and paddle5 directions
+    paddle4DirY = -1
+    paddle5DirY = 1
+
+    #Creates Rectangles for ball and paddles.
+    paddle1 = pygame.Rect(PADDLEOFFSET,playerOnePosition, LINETHICKNESS,PADDLESIZE)
+    paddle2 = pygame.Rect(WINDOWWIDTH - PADDLEOFFSET - LINETHICKNESS, playerTwoPosition, LINETHICKNESS,PADDLESIZE)
+    paddle3 = pygame.Rect(WINDOWWIDTH / 2 - LINETHICKNESS / 2, WINDOWHEIGHT / 2 - PADDLESIZE, LINETHICKNESS,PADDLESIZE * 2)
+    paddle4 = pygame.Rect(WINDOWWIDTH * 0.70 - LINETHICKNESS / 2,WINDOWHEIGHT / 2 - PADDLESIZE / 2,LINETHICKNESS,PADDLESIZE)
+    paddle5 = pygame.Rect(WINDOWWIDTH * 0.30 - LINETHICKNESS / 2,WINDOWHEIGHT / 2 - PADDLESIZE / 2,LINETHICKNESS,PADDLESIZE)
+    ball = pygame.Rect(ballX, ballY, LINETHICKNESS, LINETHICKNESS)
+
+    #Draws the starting position of the Arena
+    drawArena()
+    drawPaddle(paddle1)
+    drawPaddle(paddle2)
+    drawPaddle(paddle3)
+    drawPaddle(paddle4)
+    drawPaddle(paddle5)
+    drawBall(ball)
+
+    FPSCLOCK = pygame.time.Clock()
+    pygame.mouse.set_visible(False)
+
+    while True: #main game loop
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                terminate()
+            elif pointsLeft <= 0: #if points run out, game will be stopped
+                if score > compScore:
+                    text = 'You beat the computer! Congratulations!'
+                else:
+                    text = 'You lost... Thats a shame.'
+                           
+                textSurf = BASICFONT.render(text, True, BLACK)
+                textRect = textSurf.get_rect()
+                textRect.center = (int(WINDOWWIDTH / 2), int(WINDOWHEIGHT / 4))
+                DISPLAYSURF.blit(textSurf, textRect)
+
+                #draws the "Play again?" text with Yes and No buttons.
+                text2Surf = BIGFONT.render('Play again?', True, BLACK)
+                text2Rect = text2Surf.get_rect()
+                text2Rect.center = (int(WINDOWWIDTH / 2), int(WINDOWHEIGHT / 4 + 65))
+                
+                yesSurf = SUPERBIGFONT.render('Yes', True, WHITE, BLACK)
+                yesRect = yesSurf.get_rect()
+                yesRect.topleft = (int(WINDOWWIDTH * 0.35) - 60, int(WINDOWHEIGHT / 1.8))
+
+                noSurf = SUPERBIGFONT.render('No', True, WHITE, BLACK)
+                noRect = noSurf.get_rect()
+                noRect.topright = (int(WINDOWWIDTH * 0.65) + 60, int(WINDOWHEIGHT / 1.8))
+
+                while True:
+
+                    if event.type == QUIT:
+                        terminate()
+
+                    pygame.mouse.set_visible(True) # make cursor visible
+                    
+                    # Process events until the user clicks on Yes or No.
+                    checkForQuit()
+                    for event in pygame.event.get(): # event handling loop
+                        if event.type == MOUSEBUTTONUP:
+                            mousex, mousey = event.pos
+                            if yesRect.collidepoint( (mousex, mousey) ):
+                                beatTheComputer() 
+                            elif noRect.collidepoint( (mousex, mousey) ):
+                                showChooseGameMode()
+                    DISPLAYSURF.blit(textSurf, textRect)
+                    DISPLAYSURF.blit(text2Surf, text2Rect)
+                    DISPLAYSURF.blit(yesSurf, yesRect)
+                    DISPLAYSURF.blit(noSurf, noRect)
+                    pygame.display.update()
+                    FPSCLOCK.tick(FPS)
+                            
+            # mouse movement commands
+            elif event.type == MOUSEMOTION:
+                mousex, mousey = event.pos
+                paddle1.y = mousey
+                if mousex < WINDOWWIDTH/4:
+                    paddle1.x = mousex
+            elif event.type == KEYDOWN:
+                if event.key == K_b:
+                    showChooseGameMode()
+
+        drawArena()
+        drawPaddle(paddle1)
+        drawPaddle(paddle2)
+        drawPaddle(paddle3)
+        drawPaddle(paddle4)
+        drawPaddle(paddle5)
+        drawBall(ball)
+
+        stopMovingLR(paddle1)
+
+        movePaddle4(paddle4, paddle4DirY)
+        paddle4DirY = checkPaddle4Collision(paddle4, paddle4DirY)
+        movePaddle5(paddle5, paddle5DirY)
+        paddle5DirY = checkPaddle5Collision(paddle5, paddle5DirY)
+
+        ball = moveBall(ball, ballDirX, ballDirY)
+        ballDirX, ballDirY = checkEdgeCollision(ball, ballDirX, ballDirY, s2)
+        score = checkScore2(paddle1, ball, score, ballDirX)
+        compScore = checkCompScore(paddle2, ball, compScore, ballDirX, pointsLeft)
+        pointsLeft = checkPointsLeft(paddle1, paddle2, ball, pointsLeft, ballDirX)
+        ballDirX = ballDirX * checkHitBall2(ball, paddle1, paddle2, paddle3, paddle4, paddle5, ballDirX, s)
+        paddle2 = artificialIntelligence (ball, ballDirX, paddle2)
+
+        displayScore2(score)
+        displayCompScore(compScore)
+        displayPointsLeft(pointsLeft)
+        
+        pygame.display.update()
+        FPSCLOCK.tick(FPS)    
+
+#Draws the arena the game will be played in. 
+def drawArena():
+    DISPLAYSURF.fill((0,0,0))
+    
+    #Draws the players moving area
+    pygame.draw.rect(DISPLAYSURF, BLUE, (LINETHICKNESS, LINETHICKNESS, WINDOWWIDTH / 4 - LINETHICKNESS, WINDOWHEIGHT - LINETHICKNESS * 2))
+    #Draws the middle surface
+    pygame.draw.rect(DISPLAYSURF, LIGHTBLUE, (WINDOWWIDTH / 4, LINETHICKNESS, WINDOWWIDTH / 2, WINDOWHEIGHT - LINETHICKNESS * 2))
+    #Draws the comuter's moving area
+    pygame.draw.rect(DISPLAYSURF, BLUE, (WINDOWWIDTH * 0.75, LINETHICKNESS, WINDOWWIDTH * 0.75 + LINETHICKNESS * 7, WINDOWHEIGHT - LINETHICKNESS * 2))
+    #Draw outline of arena
+    pygame.draw.rect(DISPLAYSURF, WHITE, ((0,0),(WINDOWWIDTH,WINDOWHEIGHT)), LINETHICKNESS*2)
+
+#Draws the paddle
+def drawPaddle(paddle):
+    #Stops paddle moving too low
+    if paddle.bottom > WINDOWHEIGHT - LINETHICKNESS:
+        paddle.bottom = WINDOWHEIGHT - LINETHICKNESS
+    #Stops paddle moving too high
+    elif paddle.top < LINETHICKNESS:
+        paddle.top = LINETHICKNESS
+    #Draws paddle
+    pygame.draw.rect(DISPLAYSURF, WHITE, paddle)
+
+#Stops player if he moves too much to the left or right
+def stopMovingLR(paddle1):
+    #Stops paddle moving too much to the right
+    if paddle1.right > WINDOWWIDTH / 4:
+        paddle1.right = WINDOWWIDTH / 4
+    #Stops paddle moving too much to the left
+    elif paddle1.left < LINETHICKNESS:
+        paddle1.left = LINETHICKNESS
+
+#draws the ball
+def drawBall(ball):
+    pygame.draw.rect(DISPLAYSURF, WHITE,ball)
+
+#moves the ball returns new position
+def moveBall(ball, ballDirX, ballDirY):
+    ball.x += ballDirX
+    ball.y += ballDirY
+    return ball
+
+#moves paddle4 returns new position
+def movePaddle4(paddle4,paddle4DirY):
+    paddle4.y += paddle4DirY
+
+#Checks for a collision with a wall and bounces paddle of it.
+def checkPaddle4Collision(paddle4,paddle4DirY):
+    if paddle4.top == (LINETHICKNESS) or paddle4.bottom == (WINDOWHEIGHT - LINETHICKNESS):
+        paddle4DirY = paddle4DirY * -1
+    return paddle4DirY
+
+#moves paddle5 returns new position
+def movePaddle5(paddle5,paddle5DirY):
+    paddle5.y += paddle5DirY
+
+#Checks for a collision with a wall and bounces paddle of it.
+def checkPaddle5Collision(paddle5,paddle5DirY):
+    if paddle5.top == (LINETHICKNESS) or paddle5.bottom == (WINDOWHEIGHT - LINETHICKNESS):
+        paddle5DirY = paddle5DirY * -1
+    return paddle5DirY
+
+#Checks for a collision with a wall, and 'bounces' ball off it.
+#Returns new direction
+def checkEdgeCollision(ball, ballDirX, ballDirY, s2):
+    if ball.top == (LINETHICKNESS) or ball.bottom == (WINDOWHEIGHT - LINETHICKNESS):
+        s2.play()
+        ballDirY = ballDirY * -1
+    if ball.left == (LINETHICKNESS) or ball.right == (WINDOWWIDTH - LINETHICKNESS):
+        s2.play()
+        ballDirX = ballDirX * -1
+    return ballDirX, ballDirY
+        
+    
+#Checks is the ball has hit a paddle, and 'bounces' ball off it. (no mistakes)
+#NOTE! Ball will not bounce off paddles 3, 4 and 5 if score equals zero and ballDirX equals -1!
+#Because you don't want to wait until the ball finally returns to you, if you're playing this game mode.
+def checkHitBall(ball, paddle1, paddle2, paddle3, paddle4, paddle5, ballDirX, score, s):
+    if ballDirX == -1 and paddle1.right >= ball.left and paddle1.right -  ball.left < 20 and paddle1.top < ball.bottom and paddle1.bottom > ball.top:
+        s.play()
+        return -1
+    elif ballDirX == 1 and paddle2.left == ball.right and paddle2.top < ball.bottom and paddle2.bottom > ball.top:
+        s.play()
+        return -1
+    elif ballDirX == 1 and paddle3.left == ball.right and paddle3.top < ball.bottom and paddle3.bottom > ball.top:
+        s.play()
+        return -1
+    elif ballDirX == -1 and paddle3.right == ball.left and paddle3.top < ball.bottom and paddle3.bottom > ball.top and score != 0:
+        s.play()
+        return -1
+    elif ballDirX == 1 and paddle4.left == ball.right and paddle4.top < ball.bottom and paddle4.bottom > ball.top:
+        s.play()
+        return -1
+    elif ballDirX == -1 and paddle4.right == ball.left and paddle4.top < ball.bottom and paddle4.bottom > ball.top and score != 0:
+        s.play()
+        return -1
+    elif ballDirX == 1 and paddle5.left == ball.right and paddle5.top < ball.bottom and paddle5.bottom > ball.top:
+        s.play()
+        return -1
+    elif ballDirX == -1 and paddle5.right == ball.left and paddle5.top < ball.bottom and paddle5.bottom > ball.top and score != 0:
+        s.play()
+        return -1
+    else: return 1
+ 
+#Checks is the ball has hit a paddle, and 'bounces' ball off it. (beat the computer)
+def checkHitBall2(ball, paddle1, paddle2, paddle3, paddle4, paddle5, ballDirX, s):
+    if ballDirX == -1 and paddle1.right >= ball.left and paddle1.right -  ball.left < 20 and paddle1.top < ball.bottom and paddle1.bottom > ball.top:
+        s.play()
+        return -1
+    elif ballDirX == 1 and paddle2.left == ball.right and paddle2.top < ball.bottom and paddle2.bottom > ball.top:
+        s.play()
+        return -1
+    elif ballDirX == 1 and paddle3.left == ball.right and paddle3.top < ball.bottom and paddle3.bottom > ball.top:
+        s.play()
+        return -1
+    elif ballDirX == -1 and paddle3.right == ball.left and paddle3.top < ball.bottom and paddle3.bottom > ball.top:
+        s.play()
+        return -1
+    elif ballDirX == 1 and paddle4.left == ball.right and paddle4.top < ball.bottom and paddle4.bottom > ball.top:
+        s.play()
+        return -1
+    elif ballDirX == -1 and paddle4.right == ball.left and paddle4.top < ball.bottom and paddle4.bottom > ball.top:
+        s.play()
+        return -1
+    elif ballDirX == 1 and paddle5.left == ball.right and paddle5.top < ball.bottom and paddle5.bottom > ball.top:
+        s.play()
+        return -1
+    elif ballDirX == -1 and paddle5.right == ball.left and paddle5.top < ball.bottom and paddle5.bottom > ball.top:
+        s.play()
+        return -1
+    else: return 1
+
+#Checks to see if a point has been scored returns new score (no mistakes)
+def checkScore(paddle1, paddle2, ball, score, ballDirX):
+    #1 point for hitting the ball
+    if ballDirX == -1 and paddle1.right >= ball.left and paddle1.right -  ball.left < 20 and paddle1.top < ball.bottom and paddle1.bottom > ball.top:
+        score += 1
+        return score
+    #resets points when ball touches wall or computer
+    if ball.left == LINETHICKNESS:
+        return 0
+    elif ballDirX == 1 and paddle2.left == ball.right and paddle2.top < ball.bottom and paddle2.bottom > ball.top:
+        return 0
+    #if no points scored, return score unchanged
+    else: return score
+    
+#Checks to see if a point has been scored returns new score (beat the computer)
+def checkScore2(paddle1, ball, score, ballDirX):
+    #1 point for hitting the ball
+    if ballDirX == -1 and paddle1.right >= ball.left and paddle1.right -  ball.left < 20 and paddle1.top < ball.bottom and paddle1.bottom > ball.top:
+        score += 1
+        
+        return score
+    #if no points scored, return score unchanged
+    else: return score
+
+#Check to see if the best score is better than your score just before you die
+def checkBestScore(paddle2, ball, score, bestScore):
+    if ball.left == LINETHICKNESS + 1 or paddle2.left - 1 == ball.right and paddle2.top < ball.bottom and paddle2.bottom > ball.top:
+        if score > bestScore:
+            bestScore = score
+            return bestScore
+        else:
+            return bestScore
+    else:
+        return bestScore
+
+#Keeps track of computer points
+def checkCompScore(paddle2, ball, compScore, ballDirX, pointsLeft):
+    #3 points if computer hits the ball
+    if ballDirX == 1 and paddle2.left == ball.right and paddle2.top < ball.top and paddle2.bottom > ball.bottom:
+        if pointsLeft >= 3:
+            compScore += 3
+        elif pointsLeft < 3:
+            compScore += pointsLeft
+        return compScore
+    #if no points scored, return score unchanged
+    else: return compScore
+
+#Keeps track of how many points are left
+def checkPointsLeft(paddle1, paddle2, ball, pointsLeft, ballDirX):
+    if ballDirX == -1 and paddle1.right >= ball.left and paddle1.right -  ball.left < 20 and paddle1.top < ball.bottom and paddle1.bottom > ball.top:
+        pointsLeft -= 1
+        return pointsLeft
+    elif ballDirX == 1 and paddle2.left == ball.right and paddle2.top < ball.top and paddle2.bottom > ball.bottom:
+        if pointsLeft >= 3:
+            pointsLeft -= 3
+        elif pointsLeft == 2:
+            pointsLeft -= pointsLeft
+        elif pointsLeft == 1:
+            pointsLeft -= pointsLeft
+        return pointsLeft
+    else:
+        return pointsLeft
+
+#Artificial Intelligence of computer player 
+def artificialIntelligence(ball, ballDirX, paddle2):
+    #If ball is moving away from paddle, center bat
+    if ballDirX == -1:
+        if paddle2.centery < (WINDOWHEIGHT/2):
+            paddle2.y += 1
+        elif paddle2.centery > (WINDOWHEIGHT/2):
+            paddle2.y -= 1
+    #if ball moving towards bat, track its movement. 
+    elif ballDirX == 1:
+        if paddle2.centery < ball.centery:
+            paddle2.y += 1
+        else:
+            paddle2.y -=1
+    return paddle2
+
+#Displays current score on the screen ('no mistakes' game mode)
+def displayScore(score):
+    resultSurf = BASICFONT.render('Score = %s' %(score), True, WHITE)
+    resultRect = resultSurf.get_rect()
+    resultRect.topleft = (WINDOWWIDTH / 2 - 40, 25)
+    DISPLAYSURF.blit(resultSurf, resultRect)
+
+#Displays current score on the screen ('beat the computer' game mode)
+def displayScore2(score):
+    resultSurf = BASICFONT.render('Score = %s' %(score), True, WHITE)
+    resultRect = resultSurf.get_rect()
+    resultRect.topleft = (LINETHICKNESS * 2, LINETHICKNESS * 2)
+    DISPLAYSURF.blit(resultSurf, resultRect)
+
+#Displays best score yet    
+def displayBestScore(bestScore): 
+    resultSurf = BASICFONT.render('Best score = %s' %(bestScore), True, WHITE)
+    resultRect = resultSurf.get_rect()
+    resultRect.topleft = (WINDOWWIDTH / 2 - 70, 50)
+    DISPLAYSURF.blit(resultSurf, resultRect)
+
+#Displays computer score on the screen
+def displayCompScore(compScore): 
+    resultSurf = BASICFONT.render('Computer = %s' %(compScore), True, WHITE)
+    resultRect = resultSurf.get_rect()
+    resultRect.topleft = (WINDOWWIDTH - 155, 25)
+    DISPLAYSURF.blit(resultSurf, resultRect)
+
+#Displays amount of points left    
+def displayPointsLeft(pointsLeft): 
+    resultSurf = BASICFONT.render('Points left = %s' %(pointsLeft), True, WHITE)
+    resultRect = resultSurf.get_rect()
+    resultRect.topleft = (WINDOWWIDTH / 2 - 70, 25)
+    DISPLAYSURF.blit(resultSurf, resultRect)
+
+#makes sure the game can always be terminated
+def checkForQuit():
+    for event in pygame.event.get((QUIT, KEYUP)): # event handling loop
+        if event.type == QUIT or (event.type == KEYUP and event.key == K_ESCAPE):
+            terminate()
+
+#terminates the game
+def terminate():
+    pygame.quit()
+    sys.exit()
+        
+#Main function
+def main():
+    pygame.init()
+    global DISPLAYSURF
+    ##Font information
+    global BASICFONT, BASICFONTSIZE, BIGFONT, BIGFONTSIZE, SUPERBIGFONT, SUPERBIGFONTSIZE
+    BASICFONTSIZE = 20
+    BASICFONT = pygame.font.Font('freesansbold.ttf', BASICFONTSIZE)
+    BIGFONTSIZE = 40
+    BIGFONT = pygame.font.Font('freesansbold.ttf', BIGFONTSIZE)
+    SUPERBIGFONTSIZE = 55
+    SUPERBIGFONT = pygame.font.Font('freesansbold.ttf', SUPERBIGFONTSIZE)
+
+    pygame.mixer.init()
+    
+    IntroSong = pygame.mixer.music.load('IntroSong.mp3')
+    
+    pygame.mixer.music.play(-1, 0.0)
+    
+    DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH,WINDOWHEIGHT)) 
+    pygame.display.set_caption('Pong ++')
+
+    showTextScreen()
+
+if __name__=='__main__':
+    main()
+
